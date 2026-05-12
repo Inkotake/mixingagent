@@ -6,6 +6,5 @@
   "target": "Vocal 1 (CH 1)",
   "description": "主唱突然没声音，检查发现无线接收器掉线，重新配对后恢复。",
   "resolution": "重新配对无线接收器。不是调音台的问题。",
-  "relatedAuditId": "aud_abc123",
-  "tags": ["wireless", "vocal", "no_sound"]
+  "auditId": "aud_abc123"
 }

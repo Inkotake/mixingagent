@@ -128,7 +128,8 @@ export type BreakpointCategory =
   | "no_input"
   | "no_post_fader"
   | "no_main_meter"
-  | "no_room_sound";
+  | "no_room_sound"
+  | "external";
 
 // ============================================================================
 // CONSTANTS
@@ -192,6 +193,12 @@ const HYPOTHESIS_PRIORS: Record<BreakpointCategory, Array<{ name: string; probab
     { name: "speaker_power", probability: 0.30 },
     { name: "amplifier", probability: 0.20 },
     { name: "cable_speaker", probability: 0.10 },
+  ],
+  external: [
+    { name: "external_amp_or_speaker", probability: 0.40 },
+    { name: "intermittent_issue", probability: 0.30 },
+    { name: "cable_or_connector", probability: 0.20 },
+    { name: "power_cycling_needed", probability: 0.10 },
   ],
 };
 
@@ -361,11 +368,11 @@ function getFixSuggestion(location: string): string {
  */
 export function generateHypotheses(
   category: BreakpointCategory,
-  _observations?: Observation[]
+  observations?: Observation[]
 ): Hypothesis[] {
   const priors = HYPOTHESIS_PRIORS[category];
 
-  const hypotheses: Hypothesis[] = priors.map((h, i) => ({
+  let hypotheses: Hypothesis[] = priors.map((h, i) => ({
     id: `hyp_${category}_${i}`,
     name: h.name,
     probability: h.probability,
@@ -373,8 +380,11 @@ export function generateHypotheses(
     contradicts: [],
   }));
 
-  // Sort by descending probability
-  hypotheses.sort((a, b) => b.probability - a.probability);
+  // Score against observations if provided
+  if (observations && observations.length > 0) {
+    hypotheses = scoreHypotheses(hypotheses, observations);
+  }
+
   return hypotheses;
 }
 
@@ -648,10 +658,10 @@ export function classifyBreakpointsByRule(
       "Main meter shows signal but no sound in the room. " +
       "Check output patch, speaker/amplifier power, and cable connections to speakers.";
   } else {
-    // All checks passed — fall back to no_input as a safe default
-    category = "no_input";
+    // All checks passed — problem is external to the mixer
+    category = "external";
     affectedBreakpoints = [];
-    description = "Signal flow appears intact at all measured points. Issue may be intermittent or external.";
+    description = "Signal flow appears intact at all measured points. Problem is likely external (amps, speakers, cables, or intermittent).";
   }
 
   const hypotheses = generateHypotheses(category, observations);

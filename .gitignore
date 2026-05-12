@@ -7,3 +7,5 @@ dist/
 __pycache__/
 *.pyc
 coverage/
+.wing-memory.json
+pnpm-lock.yaml

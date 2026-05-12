@@ -890,7 +890,7 @@ async function handleSoundMemoryWriteApply(
       };
     }
 
-    if (!confirmed && pending.requiresExactConfirmation) {
+    if (!confirmed) {
       pendingWrites.delete(confirmation_id);
       return {
         ok: true,
