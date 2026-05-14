@@ -131,6 +131,21 @@ export type BreakpointCategory =
   | "no_room_sound"
   | "external";
 
+/** Standard signal breakpoints for no-sound diagnosis */
+export type SignalBreakpoint =
+  | "source_or_cable"
+  | "headamp_or_phantom"
+  | "input_patch"
+  | "channel_gate"
+  | "channel_mute_or_fader"
+  | "dca_or_mute_group"
+  | "send_disabled"
+  | "bus_master"
+  | "main_or_matrix"
+  | "output_patch"
+  | "external_amp_or_speaker"
+  | "unknown";
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
