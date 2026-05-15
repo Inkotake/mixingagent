@@ -1,21 +1,27 @@
 # MixingAgent — AI 调音师
 
-基于 [wing-mcp](https://github.com/Inkotake/wing-mcp) 的 **AI 声音工程师系统**。
+基于 [wing-mcp](https://github.com/Inkotake/wing-mcp) 的 AI 声音工程师系统。
 
-## AI 调音师能做什么
+## 开发状态
 
-把 MixingAgent 放在排练室，它通过 MCP 协议连接 wing-mcp 控制 Behringer WING 调音台：
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| 诊断引擎 | ✅ 可用 | Bayesian 假设评分, 5 断点分类, 13 tests |
+| 房间记忆 MCP | ✅ 可用 | 11 tests, patch sheets, incidents, preferences |
+| Skill | ✅ | 9 参考文件, validate_tool_plan.py |
+| Agent presets | ✅ | 4 子代理, 4 slash commands, 2 system prompts |
+| 语音交互 | ❌ 计划中 | push-to-talk, TTS 不进 Main LR |
+| Agent runtime | ❌ 计划中 | MCP client + session mgmt + model router |
 
-- **听懂你的问题** — "主唱没声音" → 自动定位 CH 1 → 逐级排查 → 精确定位断点
-- **只读诊断优先** — 先看 meter、查路由、读状态，不盲目修改
-- **确认后才改** — 所有写入需要你说出精确确认文本
-- **记住你的场地** — patch sheet、乐队偏好、历史故障
-- **一次只说一件事** — 不会给你甩十条指令
+## 依赖
+
+- [wing-mcp](https://github.com/Inkotake/wing-mcp) — WING MCP 服务器 (硬件控制内核)
+- Node.js >= 18, pnpm
 
 ## 架构
 
 ```
-你的语音/文字
+用户语音/文字
     ↓
 MixingAgent (诊断引擎 + Skill + 记忆)
     ↓
@@ -29,13 +35,13 @@ Behringer WING 调音台
 ```
 mixingagent/
 ├── packages/
-│   ├── sound-diagnosis-engine/   # 诊断引擎 — Bayesian 假设评分 + 断点分类
-│   └── sound-memory-mcp/         # 房间知识库 MCP — patch sheets, incidents, preferences
-├── skill/wing-console-operator/  # AI 操作规范 Skill — 9 个参考文件
-├── agent-presets/                # 子代理 + slash 命令 + system prompts
-│   ├── .claude/agents/           # 4 个专用子代理
+│   ├── sound-diagnosis-engine/   # 诊断引擎 — Bayesian 假设评分 + 5 断点分类
+│   └── sound-memory-mcp/         # 房间知识库 MCP — patch sheets, incidents
+├── skill/wing-console-operator/  # AI 操作规范 Skill — SKILL.md + 9 参考文件
+├── agent-presets/
+│   ├── .claude/agents/           # 4 子代理 (diagnosis, safety, protocol, test)
 │   ├── .claude/commands/         # /no-sound, /line-check, /review-risk
-│   └── system-prompts/           # AI 调音师 + 安全审查员 prompt
+│   └── system-prompts/           # AI 调音师 + 高危审查员
 └── examples/                     # 对话样例 + Room A patch sheet
 ```
 
@@ -43,44 +49,14 @@ mixingagent/
 
 ```bash
 pnpm install && pnpm build
-
-# 依赖 wing-mcp 的 wing-console-mcp 服务
-# 参见 https://github.com/Inkotake/wing-mcp
+# 依赖 wing-mcp 的 wing-console-mcp 服务运行中
 ```
 
-## 诊断引擎
+## 测试
 
-Bayesian 假设评分 + 断点分类规则：
-
-| 断点分类 | 假设 | 先验概率 |
-|---------|------|---------|
-| `no_input` | source_or_cable | 0.45 |
-| `no_input` | input_patch | 0.25 |
-| `no_input` | headamp_or_phantom | 0.20 |
-| `no_post_fader` | channel_mute | 0.35 |
-| `no_post_fader` | noise_gate_closed | 0.25 |
-| `no_main_meter` | dca_mute | 0.30 |
-| `no_main_meter` | mute_group | 0.25 |
-| `no_room_sound` | output_patch | 0.40 |
-| `no_room_sound` | speaker_power | 0.30 |
-| `external` | external_amp_or_speaker | 0.40 |
-
-## 对话示例
-
+```bash
+pnpm test  # 24 tests (3 files): diagnosis engine + memory MCP
 ```
-用户: 主唱没声音
-AI: [读取 Room A patch sheet] 主唱 → CH 1
-    [检查 signal] CH 1 无信号 (RMS -65 dBFS)
-    [trace path] headamp 30dB, not muted, fader -6dB
-    → 问题在音源端。请检查话筒线/无线接收器。
-
-用户: 线松了，现在好了
-AI: [重新检查] CH 1 有信号 ✅ (RMS -18.3 dBFS)。还需要什么调整？
-```
-
-## 依赖
-
-- [wing-mcp](https://github.com/Inkotake/wing-mcp) — WING MCP 服务器 (硬件控制 + 安全内核)
 
 ## License
 
